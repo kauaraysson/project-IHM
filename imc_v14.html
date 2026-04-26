@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMC Calculadora</title>
+    <link rel="icon" href="logo_imc.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* ============================== */
+        /* CSS: ARQUITETURA VISUAL EXATA  */
+        /* ============================== */
+        :root {
+            --bg-color: #B9D4D8;
+            --card-color: #A3C6CC;
+            --text-dark: #3A6372;
+            --highlight-green: #D4FF59;
+            --bar-gray: #8A9CA8;
+            --male-color: #1976D2; 
+            --female-color: #F48FB1; 
+            --admin-color: #00C5CD; 
+            --result-green: #4EEE94; 
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-dark);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; overflow: hidden;
+        }
+
+        .app-window { width: 100%; max-width: 1000px; height: 100%; max-height: 650px; display: flex; position: relative; }
+
+        /* BARRA LATERAL */
+        .sidebar { width: 200px; display: flex; flex-direction: column; justify-content: center; position: relative; padding-left: 20px; }
+        .sidebar::before { content: ''; position: absolute; left: 35px; top: 30%; bottom: 30%; width: 4px; background-color: var(--bar-gray); z-index: 1; }
+        .logo-sidebar { position: absolute; top: 30px; left: 15px; width: 60px; object-fit: contain; display: none; animation: fadeIn 1s ease-out; }
+
+        .nav-item { display: flex; align-items: center; margin: 40px 0; position: relative; z-index: 2; font-weight: bold; color: var(--text-dark); opacity: 0.5; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: pointer; }
+        .nav-item:hover { transform: translateX(5px); opacity: 0.8; }
+        .nav-item.active { opacity: 1; transform: translateX(10px); }
+        .nav-dot { width: 20px; height: 20px; background-color: var(--text-dark); border-radius: 50%; margin-right: 15px; box-shadow: 0 0 0 5px var(--bg-color); transition: all 0.3s ease; }
+        .nav-item:hover .nav-dot { transform: scale(1.2); }
+
+        /* ÁREA CENTRAL */
+        .main-card { background-color: var(--card-color); border-radius: 40px; flex: 1; padding: 30px 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto;}
+
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .tela { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center;}
+        .tela.ativa { display: flex; animation: fadeSlideUp 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
+
+        /* LOGO PRINCIPAL */
+        .logo-container-login { display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
+        .logo-main { width: 130px; height: 130px; object-fit: contain; transition: transform 0.5s ease; }
+        .logo-main:hover { transform: scale(1.05) rotate(-2deg); }
+
+        /* FORMULÁRIOS COM FEEDBACK VISUAL */
+        .input-group { width: 100%; max-width: 350px; display: flex; align-items: center; border-bottom: 2px solid var(--text-dark); margin-bottom: 20px; transition: all 0.3s ease; }
+        .input-group:focus-within { transform: scale(1.02); border-bottom-color: #26A69A; }
+        .input-group i { width: 30px; font-size: 18px; color: var(--text-dark); text-align: left; transition: 0.3s ease; }
+        .input-group:focus-within i { color: #26A69A; }
+        .input-group input, .input-group select { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-dark); font-size: 16px; outline: none; }
+        
+        input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; }
+        .password-toggle { cursor: pointer; opacity: 0.6; transition: 0.2s; text-align: right !important; }
+        .password-toggle:hover { opacity: 1; transform: scale(1.2); }
+
+        .links-row { width: 100%; max-width: 350px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; font-weight: bold; }
+        .links-row a { color: var(--text-dark); text-decoration: none; cursor: pointer; transition: 0.2s; }
+        .links-row a:hover { opacity: 0.7; }
+        .social-login i { font-size: 24px; margin-right: 10px; cursor: pointer; transition: 0.3s; }
+        .social-login i:hover { transform: translateY(-3px); color: #26A69A; }
+
+        /* BOTÕES MAGNÉTICOS */
+        .btn-action { background-color: var(--bg-color); color: var(--text-dark); border: 2px solid var(--text-dark); padding: 10px 40px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 20px; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; min-width: 180px; text-align: center;}
+        .btn-action:hover { background-color: var(--text-dark); color: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        .btn-action:active { transform: translateY(1px); box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
+        .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* BOTÕES LATERAIS (VOLTAR, FEEDBACK, SAIR) */
+        .sidebar-buttons { position: absolute; bottom: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; width: 120px; }
+        .btn-voltar { background-color: transparent; border: 2px solid var(--bar-gray); padding: 10px 0; border-radius: 10px; font-weight: bold; color: var(--text-dark); cursor: pointer; width: 100%; text-align: center; transition: all 0.3s ease; font-size: 12px; }
+        .btn-voltar:hover { background-color: var(--bar-gray); color: white; transform: translateX(-3px); }
+
+        .btn-feedback { background-color: transparent; border: 2px solid var(--card-color); padding: 10px 0; border-radius: 10px; font-weight: bold; color: var(--text-dark); cursor: pointer; text-decoration: none; text-align: center; width: 100%; display: block; transition: all 0.3s ease; font-size: 12px; }
+        .btn-feedback:hover { background-color: var(--card-color); transform: translateX(-3px); }
+
+        .btn-sair { background-color: var(--card-color); border: none; padding: 10px 0; border-radius: 10px; font-weight: bold; color: var(--text-dark); cursor: pointer; width: 100%; text-align: center; transition: all 0.3s ease; font-size: 12px; }
+        .btn-sair:hover { background-color: #A3C6CC; transform: translateX(-3px); opacity: 0.7;}
+
+        /* CSS RESULTADO & MANEQUINS SVGs */
+        .resultado-layout { display: flex; width: 100%; height: 100%; gap: 30px;}
+        .painel-esquerdo { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: rgba(255,255,255,0.2); border-radius: 20px; padding: 20px;}
+        .manequim-container { height: 180px; width: 100%; display: flex; justify-content: center; align-items: flex-end; margin-bottom: 20px; }
+        .svg-manequim { display: none; height: 100%; transform-origin: bottom center; transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .svg-manequim.ativo { display: block; }
+        .cartao-dica { background-color: var(--bg-color); padding: 15px; border-radius: 15px; font-size: 13px; text-align: center; width: 95%; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: 0.3s;}
+        .cartao-dica:hover { transform: scale(1.02); }
+        .classificacao-box { text-align: center; margin-bottom: 15px; }
+        .classificacao-box h3 { margin: 0; font-size: 28px; text-transform: uppercase; font-family: 'Segoe UI Black', sans-serif;}
+        .classificacao-box p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; color: var(--text-dark);}
+        .painel-direito { flex: 1.2; display: flex; flex-direction: column; justify-content: space-between; padding-top: 10px;}
+        .chart-container { width: 100%; max-width: 450px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px;}
+        .chart-row { display: flex; align-items: center; border-bottom: 1px solid rgba(58, 99, 114, 0.3); padding-bottom: 5px; transition: 0.2s;}
+        .chart-row:hover { background-color: rgba(255,255,255,0.1); border-radius: 5px; }
+        .chart-label { width: 110px; text-align: right; padding-right: 15px; font-weight: bold; font-size: 13px;}
+        .chart-bar-area { flex: 1; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid rgba(58, 99, 114, 0.3); padding-left: 2px;}
+        .bar-gray, .bar-green { height: 12px; border-radius: 0 5px 5px 0; transition: width 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); }
+        .bar-gray { background-color: var(--bar-gray); }
+        .bar-green { background-color: var(--highlight-green); display: none; box-shadow: 0 0 8px rgba(212, 255, 89, 0.5);}
+        .chart-axis { display: flex; margin-left: 112px; justify-content: space-between; font-size: 11px; margin-top: 2px; opacity: 0.8; font-weight: bold; }
+        .chart-axis span { width: 20px; text-align: center; }
+        .chart-axis span:first-child { text-align: left; }
+        .chart-axis span:last-child { text-align: right; }
+        .resultado-footer { background-color: var(--bg-color); padding: 15px; border-radius: 20px; text-align: center; margin-top: 15px; transition: 0.3s;}
+        .resultado-footer:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05);}
+        .resultado-footer span { font-size: 12px; font-weight: bold;}
+        .resultado-footer h2 { margin: 0; font-size: 34px; font-style: italic;}
+
+        /* ADMIN */
+        .admin-layout { width: 100%; height: 100%; display: flex; flex-direction: column; gap: 15px;}
+        .admin-summary { display: flex; gap: 15px; width: 100%;}
+        .admin-kpi { background-color: rgba(255,255,255,0.3); flex: 1; border-radius: 15px; padding: 15px; text-align: center; border: 2px solid var(--text-dark); transition: 0.3s;}
+        .admin-kpi:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .admin-kpi span { font-size: 11px; font-weight: bold; text-transform: uppercase;}
+        .admin-kpi h2 { margin: 0; font-size: 36px; color: var(--admin-color);}
+        .admin-charts { display: flex; gap: 15px; flex: 1; width: 100%;}
+        .admin-chart-box { background-color: var(--bg-color); flex: 1; border-radius: 15px; padding: 15px; display: flex; flex-direction: column; transition: 0.3s;}
+        .admin-chart-box:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .admin-chart-box h4 { margin: 0 0 10px 0; font-size: 14px; text-align: center;}
+        .adm-bar-container { flex: 1; display: flex; align-items: flex-end; gap: 8px; justify-content: space-around; padding-top: 10px; border-bottom: 2px solid var(--text-dark); border-left: 2px solid var(--text-dark);}
+        .adm-bar-col { display: flex; flex-direction: column; align-items: center; width: 25px; height: 100%; justify-content: flex-end;}
+        .adm-bar { width: 100%; background-color: var(--admin-color); border-radius: 5px 5px 0 0; transition: height 1s cubic-bezier(0.165, 0.84, 0.44, 1);}
+        .adm-bar:hover { filter: brightness(1.2); cursor: pointer; }
+        .adm-bar-label { font-size: 10px; font-weight: bold; margin-top: 3px;}
+        .adm-funnel-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;}
+        .funnel-step { border-radius: 10px; display: flex; justify-content: space-between; align-items: center; color: var(--text-dark); font-weight: bold; font-size: 12px; transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); padding: 8px 12px; transform-origin: left;}
+        .funnel-step:hover { transform: scale(1.02); filter: brightness(1.1); cursor: default; }
+
+        /* ============================== */
+        /* MEDIA QUERIES (RESPONSIVIDADE MOBILE) */
+        /* ============================== */
+        @media (max-width: 768px) {
+            body { align-items: flex-start; padding-top: 20px;}
+            .app-window { flex-direction: column; height: auto; max-height: none; max-width: 95%; border-radius: 20px;}
+            
+            .sidebar { width: 100%; flex-direction: row; padding: 10px; justify-content: space-around; align-items: center; border-bottom: 2px solid rgba(0,0,0,0.1); background-color: var(--card-color); border-radius: 20px 20px 0 0;}
+            .sidebar::before { display: none; }
+            .logo-sidebar { position: relative; top: 0; left: 0; width: 40px; margin-right: 10px;}
+            .nav-item { margin: 10px; font-size: 12px; flex-direction: column;}
+            .nav-dot { margin-right: 0; margin-bottom: 5px; width: 15px; height: 15px;}
+            
+            .sidebar-buttons { position: relative; bottom: 0; left: 0; display: flex; flex-direction: row; justify-content: center; width: 100%; margin-top: 10px; gap: 5px;}
+            .btn-voltar, .btn-feedback, .btn-sair { font-size: 10px; padding: 8px 5px;}
+
+            .main-card { border-radius: 0 0 20px 20px; padding: 20px; flex: auto;}
+            
+            #tela-perfil > div:first-child { flex-direction: column; align-items: center;}
+            
+            .resultado-layout { flex-direction: column; gap: 15px;}
+            .painel-esquerdo, .painel-direito { width: 100%; }
+            .manequim-container { height: 150px; }
+            
+            .admin-summary { flex-direction: column; }
+            .admin-charts { flex-direction: column; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-window">
+        <div class="sidebar">
+            <img src="logo_imc.png" alt="Logo" class="logo-sidebar" id="logo-sidebar" onerror="this.style.display='none'">
+
+            <div class="nav-item active" id="nav-login"><div class="nav-dot"></div><span class="nav-text">LOGIN</span></div>
+            <div class="nav-item" id="nav-perfil"><div class="nav-dot"></div><span class="nav-text">PERFIL</span></div>
+            <div class="nav-item" id="nav-resultado"><div class="nav-dot"></div><span class="nav-text">RESULTADO</span></div>
+            <div class="nav-item" id="nav-admin" style="display: none; color: var(--admin-color);"><div class="nav-dot" style="background-color: var(--admin-color);"></div><span class="nav-text">ADMIN</span></div>
+            
+            <div class="sidebar-buttons">
+                <button class="btn-voltar" id="btn-voltar" onclick="voltarPagina()" style="display: none;">VOLTAR</button>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSf3lhBAuenRQrBwDaiR8Cbb2dldH6gEg_6nTj7KNJeHYSbTaw/viewform?usp=dialog" target="_blank" class="btn-feedback" id="btn-feedback" style="display: none;">FEEDBACK</a>
+                <button class="btn-sair" id="btn-sair" onclick="sairApp()" style="display: none;">SAIR</button>
+            </div>
+        </div>
+
+        <div class="main-card">
+            
+            <div id="tela-login" class="tela ativa">
+                <div class="logo-container-login">
+                    <img src="logo_imc.png" alt="IMC Logo" class="logo-main" onerror="this.style.display='none'">
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" id="log-usuario" placeholder="USUÁRIO">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="log-senha" placeholder="SENHA">
+                    <i class="fas fa-eye password-toggle" onclick="togglePasswordVisibility('log-senha', this)"></i>
+                </div>
+                
+                <div class="links-row">
+                    <div class="social-login"><i class="fab fa-google"></i><i class="fab fa-apple"></i></div>
+                    <div><a onclick="trocarTela('tela-cadastro')">CADASTRO</a> | <a onclick="trocarTela('tela-recuperar')">ESQUECI MINHA SENHA</a></div>
+                </div>
+                <button class="btn-action" id="btn-entrar" onclick="entrar()">ENTRAR</button>
+            </div>
+
+            <div id="tela-cadastro" class="tela">
+                <h2>CRIAR CONTA</h2>
+                <div class="input-group"><i class="fas fa-user"></i><input type="text" id="cad-usuario" placeholder="Novo Usuário"></div>
+                <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="cad-senha" placeholder="Nova Senha"></div>
+                <button class="btn-action" id="btn-cadastrar" onclick="cadastrar()">CADASTRAR</button>
+                <a style="margin-top: 15px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;" onclick="trocarTela('tela-login')" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Voltar</a>
+            </div>
+            
+            <div id="tela-recuperar" class="tela"><h2>RECUPERAR SENHA</h2><div class="input-group"><i class="fas fa-user"></i><input type="text" id="rec-usuario" placeholder="Seu Usuário"></div><button class="btn-action" onclick="alert('Funcionalidade em desenvolvimento.')">VERIFICAR</button><a style="margin-top: 15px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;" onclick="trocarTela('tela-login')" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Voltar</a></div>
+
+            <div id="tela-perfil" class="tela">
+                <div style="display: flex; gap: 20px; width: 100%; justify-content: center; margin-bottom: 20px;">
+                    <div class="input-group" style="width: auto;"><i class="fas fa-calendar-alt"></i><input type="number" id="idade" placeholder="IDADE" style="width: 80px;"></div>
+                    <div class="input-group" style="width: auto;"><i class="fas fa-ruler-vertical"></i><input type="text" inputmode="decimal" id="tamanho" placeholder="METROS" style="width: 120px;"></div>
+                    <div class="input-group" style="width: auto;"><i class="fas fa-weight"></i><input type="number" step="0.1" id="peso" placeholder="KG" style="width: 80px;"></div>
+                </div>
+                <div class="input-group" style="width: 50%;">
+                    <i class="fas fa-venus-mars"></i>
+                    <select id="genero" style="cursor: pointer;">
+                        <option value="homem">Homem</option>
+                        <option value="mulher">Mulher</option>
+                        <option value="nd">Prefiro não dizer</option>
+                    </select>
+                </div>
+                <button class="btn-action" id="btn-calcular" onclick="calcular()">CALCULAR</button>
+            </div>
+
+            <div id="tela-resultado" class="tela">
+                <div class="resultado-layout">
+                    
+                    <div class="painel-esquerdo">
+                        <div class="manequim-container">
+                            <svg id="svg-homem" class="svg-manequim" viewBox="0 0 100 200"><circle cx="50" cy="35" r="15" fill="var(--male-color)"/><rect x="25" y="55" width="50" height="70" rx="20" fill="var(--male-color)"/><rect x="30" y="115" width="15" height="70" rx="7.5" fill="var(--male-color)"/><rect x="55" y="115" width="15" height="70" rx="7.5" fill="var(--male-color)"/></svg>
+                            <svg id="svg-mulher" class="svg-manequim" viewBox="0 0 100 200"><circle cx="50" cy="35" r="15" fill="var(--female-color)"/><rect x="25" y="55" width="50" height="70" rx="20" fill="var(--female-color)"/><rect x="30" y="115" width="15" height="70" rx="7.5" fill="var(--female-color)"/><rect x="55" y="115" width="15" height="70" rx="7.5" fill="var(--female-color)"/></svg>
+                            <svg id="svg-nd" class="svg-manequim" viewBox="0 0 100 200"><circle cx="50" cy="35" r="15" fill="var(--bar-gray)"/><rect x="25" y="55" width="50" height="70" rx="20" fill="var(--bar-gray)"/><rect x="30" y="115" width="15" height="70" rx="7.5" fill="var(--bar-gray)"/><rect x="55" y="115" width="15" height="70" rx="7.5" fill="var(--bar-gray)"/></svg>
+                        </div>
+                        <div class="cartao-dica" id="texto-dica">Calculando recomendação médica...</div>
+                    </div>
+
+                    <div class="painel-direito">
+                        <div class="classificacao-box"><h3 id="texto-grau">STATUS</h3><p id="texto-risco">Risco de saúde: -</p></div>
+                        <div class="chart-container">
+                            <div class="chart-row"><div class="chart-label">2 anos</div><div class="chart-bar-area"><div class="bar-green" id="user-bar-2"></div><div class="bar-gray" style="width: 24%;"></div></div></div>
+                            <div class="chart-row"><div class="chart-label">5 anos</div><div class="chart-bar-area"><div class="bar-green" id="user-bar-5"></div><div class="bar-gray" style="width: 32%;"></div></div></div>
+                            <div class="chart-row"><div class="chart-label">5 a 19 anos</div><div class="chart-bar-area"><div class="bar-green" id="user-bar-19"></div><div class="bar-gray" style="width: 38%;"></div></div></div>
+                            <div class="chart-row"><div class="chart-label">20 a 59 anos</div><div class="chart-bar-area"><div class="bar-green" id="user-bar-59"></div><div class="bar-gray" style="width: 50%;"></div></div></div>
+                            <div class="chart-row"><div class="chart-label">60 anos ou mais</div><div class="chart-bar-area"><div class="bar-green" id="user-bar-60"></div><div class="bar-gray" style="width: 54%;"></div></div></div>
+                            <div class="chart-axis"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span></div>
+                        </div>
+                        <div class="resultado-footer"><span>SEU IMC</span><h2 id="resultado-final">0.00</h2></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tela-admin" class="tela">
+                <h2>ANALYTICS LOCAL DO APP</h2>
+                <div class="admin-layout">
+                    <div class="admin-summary">
+                        <div class="admin-kpi"><span>Total de Logins</span><h2 id="adm-total">0</h2></div>
+                        <div class="admin-kpi"><span>Usuários Únicos</span><h2 id="adm-unicos">0</h2></div>
+                        <div class="admin-kpi" style="color: var(--text-dark);"><span>Acessos Repetidos</span><h2 id="adm-repetidos">0</h2></div>
+                    </div>
+                    <div class="admin-charts">
+                        <div class="admin-chart-box">
+                            <h4>Histórico de Acessos Locais</h4>
+                            <div class="adm-bar-container" id="adm-bar-historial"></div>
+                        </div>
+                        <div class="admin-chart-box">
+                            <h4>Funil de Conversão</h4>
+                            <div class="adm-funnel-container">
+                                <div class="funnel-step" style="width: 100%; background-color: var(--bar-gray);"><span class="funnel-step-name">1. Login</span><span id="fn-login">0</span></div>
+                                <div class="funnel-step" style="width: 75%; background-color: var(--admin-color);"><span class="funnel-step-name">2. Perfil</span><span id="fn-perfil">0</span></div>
+                                <div class="funnel-step" style="width: 50%; background-color: var(--result-green); color: var(--text-dark);"><span class="funnel-step-name">3. Resultado</span><span id="fn-resultado">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÕES DA API (NUVEM)
+        // ==========================================
+        
+        // COLOQUE O SEU LINK AQUI
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyqM_gLGR5tJooag7yfKBoiVcqONDASmlaF3bG8-cb2L6W4XFe7MlYbkhhBJIpD-8g/exec";
+
+        // Lógica de Direcionamento Visual dos Botões Laterais
+        function trocarTela(idTelaDestino) {
+            document.querySelectorAll('.tela').forEach(tela => tela.classList.remove('ativa'));
+            document.getElementById(idTelaDestino).classList.add('ativa');
+
+            let logoSidebar = document.getElementById('logo-sidebar');
+            let btnFeedback = document.getElementById('btn-feedback');
+            let btnSair = document.getElementById('btn-sair');
+            let btnVoltar = document.getElementById('btn-voltar');
+
+            btnFeedback.style.display = 'none';
+            btnSair.style.display = 'none';
+            btnVoltar.style.display = 'none';
+
+            if(idTelaDestino === 'tela-login' || idTelaDestino === 'tela-cadastro' || idTelaDestino === 'tela-recuperar') {
+                logoSidebar.style.display = 'none';
+            } else {
+                logoSidebar.style.display = 'block';
+                
+                // Mágica da UX: Exibe os botões apenas onde eles são necessários
+                if(idTelaDestino === 'tela-perfil') {
+                    btnVoltar.style.display = 'block';
+                } else if(idTelaDestino === 'tela-resultado') {
+                    btnVoltar.style.display = 'block';
+                    btnFeedback.style.display = 'block';
+                    btnSair.style.display = 'block';
+                } else if(idTelaDestino === 'tela-admin') {
+                    btnSair.style.display = 'block'; 
+                }
+            }
+
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            if(idTelaDestino.includes('login') || idTelaDestino.includes('cadastro') || idTelaDestino.includes('recuperar')) document.getElementById('nav-login').classList.add('active');
+            else if(idTelaDestino === 'tela-perfil') document.getElementById('nav-perfil').classList.add('active');
+            else if(idTelaDestino === 'tela-resultado') document.getElementById('nav-resultado').classList.add('active');
+            else if(idTelaDestino === 'tela-admin') document.getElementById('nav-admin').classList.add('active');
+        }
+
+        function voltarPagina() {
+            let telaAtual = document.querySelector('.tela.ativa').id;
+            if(telaAtual === 'tela-resultado') { trocarTela('tela-perfil'); } 
+            else if(telaAtual === 'tela-perfil') { sairApp(); }
+        }
+
+        function sairApp() { 
+            document.getElementById('log-usuario').value = "";
+            document.getElementById('log-senha').value = "";
+            document.getElementById('idade').value = "";
+            document.getElementById('tamanho').value = "";
+            document.getElementById('peso').value = "";
+            document.getElementById('genero').value = "homem"; 
+
+            document.getElementById('nav-admin').style.display = 'none';
+            localStorage.removeItem("appIMC_admLogado"); 
+            sessionStorage.removeItem('usuarioAtivo');
+            sessionStorage.removeItem('idUsuarioAtivo');
+
+            trocarTela('tela-login'); 
+        }
+
+        function togglePasswordVisibility(inputId, iconElement) {
+            let input = document.getElementById(inputId);
+            if (input.type === "password") { input.type = "text"; iconElement.classList.replace('fa-eye', 'fa-eye-slash'); } 
+            else { input.type = "password"; iconElement.classList.replace('fa-eye-slash', 'fa-eye'); }
+        }
+
+        // ==========================================
+        // O MOTOR INVISÍVEL (TÉCNICA JSONP)
+        // ==========================================
+        function enviarParaAPI(pacote, botaoId, textoOriginal) {
+            let btn = document.getElementById(botaoId);
+            btn.innerText = "PROCESSANDO...";
+            btn.disabled = true;
+
+            return new Promise((resolve, reject) => {
+                let nomeCallback = "jsonp_" + Date.now() + Math.floor(Math.random() * 1000);
+
+                window[nomeCallback] = function(dadosRecebidos) {
+                    btn.innerText = textoOriginal;
+                    btn.disabled = false;
+                    delete window[nomeCallback]; 
+                    script.remove(); 
+                    resolve(dadosRecebidos);
+                };
+
+                let urlCompleta = GOOGLE_SHEETS_URL + "?callback=" + nomeCallback;
+                for (let chave in pacote) {
+                    urlCompleta += "&" + chave + "=" + encodeURIComponent(pacote[chave]);
+                }
+
+                let script = document.createElement("script");
+                script.src = urlCompleta;
+                
+                script.onerror = function() {
+                    btn.innerText = textoOriginal;
+                    btn.disabled = false;
+                    delete window[nomeCallback];
+                    script.remove();
+                    reject("Erro na conexão com a nuvem.");
+                };
+                
+                document.body.appendChild(script);
+            });
+        }
+
+        // ==========================================
+        // ROTAS DE AÇÃO
+        // ==========================================
+        function cadastrar() { 
+            let u = document.getElementById('cad-usuario').value.trim(); 
+            let p = document.getElementById('cad-senha').value.trim(); 
+
+            if(!u || !p) { alert("Preencha todos os dados!"); return; } 
+
+            let pacote = { action: "cadastro", usuario: u, senha: p };
+
+            enviarParaAPI(pacote, 'btn-cadastrar', 'CADASTRAR')
+            .then(data => {
+                if(data.status === "sucesso") {
+                    alert(data.mensagem);
+                    document.getElementById('log-usuario').value = u;
+                    trocarTela('tela-login');
+                } else { alert(data.mensagem); }
+            })
+            .catch(erro => alert(erro));
+        }
+
+        function entrar() {
+            let u = document.getElementById('log-usuario').value.trim();
+            let p = document.getElementById('log-senha').value.trim();
+            registrarFunil('login'); 
+
+            if(u === 'adm' && p === 'adm') {
+                document.getElementById('nav-admin').style.display = 'flex';
+                carregarAnalyticsAdmin(); trocarTela('tela-admin'); return;
+            }
+
+            if(!u || !p) { alert("Preencha usuário e senha."); return; }
+
+            let pacote = { action: "login", usuario: u, senha: p };
+
+            enviarParaAPI(pacote, 'btn-entrar', 'ENTRAR')
+            .then(data => {
+                if(data.status === "sucesso") {
+                    sessionStorage.setItem('usuarioAtivo', u);
+                    sessionStorage.setItem('idUsuarioAtivo', data.id); 
+                    registrarAcesso(u); 
+                    registrarFunil('perfil'); 
+                    trocarTela('tela-perfil');
+                } else { alert(data.mensagem); }
+            })
+            .catch(erro => alert(erro));
+        }
+
+        function calcular() {
+            let idade = parseInt(document.getElementById('idade').value);
+            let peso = parseFloat(document.getElementById('peso').value);
+            let genero = document.getElementById('genero').value;
+            let txtTamanho = document.getElementById('tamanho').value.trim().replace(',', '.');
+            let tamanho = parseFloat(txtTamanho);
+            
+            if (tamanho > 10) { tamanho = tamanho / 100; }
+            if(isNaN(idade) || isNaN(tamanho) || isNaN(peso) || tamanho <= 0) { alert("Preencha os dados corretamente."); return; }
+            
+            registrarFunil('resultado');
+
+            let imc = peso / (tamanho * tamanho);
+            let imcFormatado = imc.toFixed(2);
+            document.getElementById('resultado-final').innerText = imcFormatado;
+
+            let idUsuarioLogado = sessionStorage.getItem('idUsuarioAtivo') || "UID-OFFLINE";
+            let pacote = { 
+                action: "salvar_imc", iduser: idUsuarioLogado, 
+                idade: idade, tamanho: tamanho, peso: peso, 
+                genero: genero, imc: imcFormatado 
+            };
+
+            enviarParaAPI(pacote, 'btn-calcular', 'CALCULAR')
+            .then(data => {
+                console.log(data.mensagem);
+                mostrarInterfaceResultado(imc, idade, genero);
+            })
+            .catch(() => {
+                console.log("Cálculo salvo offline (Falha na nuvem)");
+                mostrarInterfaceResultado(imc, idade, genero);
+            });
+        }
+
+        function mostrarInterfaceResultado(imc, idade, genero) {
+            let grau = ""; let risco = ""; let dica = ""; let escalaCorpo = 1; 
+            let corDestaque = "var(--bar-gray)";
+            
+            if(genero === "homem") corDestaque = "var(--male-color)";
+            else if(genero === "mulher") corDestaque = "var(--female-color)";
+            
+            if (imc < 18.5) { grau = "Abaixo do Peso"; risco = "Baixo peso (Nutrição)"; dica = "Aumente ingestão calórica com alimentos nutritivos."; escalaCorpo = 0.7; } 
+            else if (imc < 25) { grau = "Peso Normal"; risco = "Baixo (Saudável)"; dica = "Excelente! Mantenha a rotina de exercícios regulares."; escalaCorpo = 1.0; } 
+            else if (imc < 30) { grau = "Sobrepeso"; risco = "Risco Moderado"; dica = "Inicie déficit calórico leve e exercícios aeróbicos."; escalaCorpo = 1.25; } 
+            else if (imc < 35) { grau = "Obesidade Grau 1"; risco = "Diabetes, Hipertensão"; dica = "Procure orientação nutricional. Exercícios de baixo impacto."; escalaCorpo = 1.5; } 
+            else { grau = "Obesidade Extrema"; risco = "Risco Severo"; dica = "Acompanhamento médico multidisciplinar imediato recomendado."; escalaCorpo = 1.9; }
+
+            let titleGrau = document.getElementById('texto-grau');
+            titleGrau.innerText = grau; titleGrau.style.color = corDestaque; 
+            document.getElementById('texto-risco').innerText = risco;
+            document.getElementById('texto-dica').innerText = dica;
+
+            document.querySelectorAll('.svg-manequim').forEach(man => man.classList.remove('ativo'));
+            let idSvg = genero === "homem" ? "svg-homem" : (genero === "mulher" ? "svg-mulher" : "svg-nd");
+            let svgAtivo = document.getElementById(idSvg);
+            
+            svgAtivo.classList.add('ativo');
+            setTimeout(() => { svgAtivo.style.transform = "scaleX(" + escalaCorpo + ")"; }, 50);
+
+            document.querySelectorAll('.bar-green').forEach(bar => { bar.style.display = 'none'; bar.style.width = '0'; });
+            let percentWidth = (imc / 50) * 100; if(percentWidth > 100) percentWidth = 100;
+            
+            let barId = "";
+            if(idade <= 4) barId = "user-bar-2";
+            else if(idade <= 10) barId = "user-bar-5";
+            else if(idade <= 19) barId = "user-bar-19";
+            else if(idade <= 59) barId = "user-bar-59";
+            else barId = "user-bar-60";
+
+            let userBar = document.getElementById(barId);
+            userBar.style.display = "block";
+            setTimeout(() => { userBar.style.width = percentWidth + "%"; }, 100);
+
+            trocarTela('tela-resultado');
+        }
+
+        // --- SISTEMA LOCAL DE ANALYTICS ---
+        function registrarAcesso(usuarioLogado) { let log = localStorage.getItem("appIMC_accessLog"); let db = log ? JSON.parse(log) : []; db.push({ user: usuarioLogado, timestamp: new Date().getTime() }); localStorage.setItem("appIMC_accessLog", JSON.stringify(db));}
+        function registrarFunil(passo) { let log = localStorage.getItem("appIMC_funnelData"); let funnel = log ? JSON.parse(log) : {loginHits: 0, profileHits: 0, resultHits: 0}; if(passo === 'login') funnel.loginHits++; else if(passo === 'perfil') funnel.profileHits++; else if(passo === 'resultado') funnel.resultHits++; localStorage.setItem("appIMC_funnelData", JSON.stringify(funnel));}
+
+        function carregarAnalyticsAdmin() {
+            let log = localStorage.getItem("appIMC_accessLog"); let accessDbRaw = log ? JSON.parse(log) : []; let funnelData = localStorage.getItem("appIMC_funnelData") ? JSON.parse(localStorage.getItem("appIMC_funnelData")) : {loginHits: 0, profileHits: 0, resultHits: 0};
+            let accessDb = []; accessDbRaw.forEach(registro => { let ts = typeof registro === 'number' ? registro : registro.timestamp; let userName = registro.user || 'desconhecido'; if(ts && !isNaN(new Date(ts).getTime()) && userName !== 'adm') { accessDb.push({ user: userName, timestamp: ts }); } });
+            let totalAcessos = accessDb.length; let usuariosUnicosSet = new Set(accessDb.map(reg => reg.user)); let totalUnicos = usuariosUnicosSet.size;
+            document.getElementById('adm-total').innerText = totalAcessos; document.getElementById('adm-unicos').innerText = totalUnicos; document.getElementById('adm-repetidos').innerText = totalAcessos - totalUnicos;
+            document.getElementById('fn-login').innerText = funnelData.loginHits; document.getElementById('fn-perfil').innerText = funnelData.profileHits; document.getElementById('fn-resultado').innerText = funnelData.resultHits;
+            let chartHistorial = document.getElementById('adm-bar-historial'); chartHistorial.innerHTML = "";
+            let accessPorDiaMap = {}; accessDb.forEach(reg => { let d = new Date(reg.timestamp); let f = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getFullYear()).slice(-2)}`; accessPorDiaMap[f] = (accessPorDiaMap[f] || 0) + 1; });
+            let chaves = Object.keys(accessPorDiaMap).slice(-7);
+            let maxA = chaves.length > 0 ? Math.max(...Object.values(accessPorDiaMap)) : 0;
+            chaves.forEach(dia => {
+                let c = accessPorDiaMap[dia];
+                chartHistorial.innerHTML += `<div class="adm-bar-col"><span style="font-size:10px; font-weight:bold;">${c}</span><div class="adm-bar" style="height: ${(c/maxA)*100}px;"></div><span class="adm-bar-label">${dia}</span></div>`;
+            });
+        }
+    </script>
+</body>
+</html>
