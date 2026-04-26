@@ -9,7 +9,7 @@
     
     <style>
         /* ============================== */
-        /* CSS: ARQUITETURA VISUAL EXATA  */
+        /*     CSS: ARQUITETURA VISUAL    */
         /* ============================== */
         :root {
             --bg-color: #B9D4D8;
@@ -80,12 +80,11 @@
         .btn-action:active { transform: translateY(1px); box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
         .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* ============================== */
+        /* ======================================== */
         /* BOTÕES LATERAIS (VOLTAR, FEEDBACK, SAIR) */
-        /* ============================== */
+        /* ======================================== */
         .sidebar-buttons { position: absolute; bottom: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; width: 120px; }
         
-        /* AQUI FOI REMOVIDA A BORDA DO BOTÃO VOLTAR PARA PADRONIZAR */
         .btn-voltar, .btn-feedback, .btn-sair { font-weight: bold; color: var(--text-dark); cursor: pointer; text-align: center; width: 100%; padding: 10px 0; border-radius: 10px; font-size: 12px; transition: 0.3s; text-decoration: none; border: none; background: transparent; }
         
         .btn-sair { background-color: var(--card-color); }
@@ -142,7 +141,7 @@
         .funnel-step:hover { transform: scale(1.02); filter: brightness(1.1); cursor: default; }
 
         /* ============================== */
-        /* MEDIA QUERIES (RESPONSIVIDADE MOBILE) */
+        /*      RESPONSIVIDADE MOBILE     */
         /* ============================== */
         @media (max-width: 768px) {
             body { align-items: flex-start; padding: 10px; overflow-y: auto;}
@@ -270,7 +269,7 @@
             </div>
 
             <div id="tela-admin" class="tela">
-                <h2>ANALYTICS LOCAL DO APP</h2>
+                <h2>PAINEL ANALÍTICO</h2>
                 <div class="admin-layout">
                     <div class="admin-summary">
                         <div class="admin-kpi"><span>Total de Logins</span><h2 id="adm-total">0</h2></div>
@@ -464,7 +463,6 @@
 
             let idUsuarioLogado = sessionStorage.getItem('idUsuarioAtivo') || "UID-OFFLINE";
             
-            // O TRADUTOR DO BANCO DE DADOS: Intercepta o "nd" aqui e envia bonito para a planilha!
             let generoBanco = gene === "nd" ? "prefiro não dizer" : gene;
 
             let pacote = { 
@@ -476,7 +474,7 @@
             enviarParaAPI(pacote, 'btn-calcular', 'CALCULAR')
             .then(data => {
                 console.log(data.mensagem);
-                mostrarInterfaceResultado(imc, idade, gene); // Passamos o 'gene' original ('nd') para não quebrar o boneco
+                mostrarInterfaceResultado(imc, idade, gene);
             })
             .catch(() => {
                 console.log("Cálculo salvo offline (Falha na nuvem)");
@@ -526,7 +524,6 @@
             trocarTela('tela-resultado');
         }
 
-        // --- SISTEMA LOCAL DE ANALYTICS ---
         function registrarAcesso(usuarioLogado) { let log = localStorage.getItem("appIMC_accessLog"); let db = log ? JSON.parse(log) : []; db.push({ user: usuarioLogado, timestamp: new Date().getTime() }); localStorage.setItem("appIMC_accessLog", JSON.stringify(db));}
         function registrarFunil(passo) { let log = localStorage.getItem("appIMC_funnelData"); let funnel = log ? JSON.parse(log) : {loginHits: 0, profileHits: 0, resultHits: 0}; if(passo === 'login') funnel.loginHits++; else if(passo === 'perfil') funnel.profileHits++; else if(passo === 'resultado') funnel.resultHits++; localStorage.setItem("appIMC_funnelData", JSON.stringify(funnel));}
 
